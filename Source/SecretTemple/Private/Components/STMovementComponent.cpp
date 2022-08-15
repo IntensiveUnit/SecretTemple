@@ -30,6 +30,12 @@ float USTMovementComponent::GetMaxSpeed() const
 		UE_LOG(LogTemp, Error, TEXT("%s() No AttributeSetBase"), *FString(__FUNCTION__));
 		return Super::GetMaxSpeed();
 	}
+
+
+	if (IsCrouching())
+	{
+		return MaxWalkSpeedCrouched;
+	}
 	
 	if (bIsRunning)
 	{
