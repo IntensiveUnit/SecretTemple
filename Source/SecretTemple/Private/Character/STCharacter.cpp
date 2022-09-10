@@ -4,14 +4,17 @@
 #include "Character/STCharacter.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Components/InputComponent.h"
 #include "Components/STMovementComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interfaces/InteractInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PlayerState/STPlayerState.h"
 
 // Sets default values
 ASTCharacter::ASTCharacter(const FObjectInitializer& ObjectInitializer) :
-	Super(ObjectInitializer.SetDefaultSubobjectClass<USTMovementComponent>(ACharacter::CharacterMovementComponentName))
+	Super(ObjectInitializer.SetDefaultSubobjectClass<USTMovementComponent>(ACharacter::CharacterMovementComponentName)),
+	InteractionRadius(200.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -24,6 +27,14 @@ ASTCharacter::ASTCharacter(const FObjectInitializer& ObjectInitializer) :
 	FollowCamera->SetupAttachment(CameraBoom);
 	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+	InteractionSphere = CreateDefaultSubobject<USphereComponent>("InteractionSphere");
+	InteractionSphere->SetupAttachment(GetCapsuleComponent());
+	InteractionSphere->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel1);
+	InteractionSphere->SetSphereRadius(InteractionRadius);
+
+	InventoryComponent = CreateDefaultSubobject<USTInventoryComponent>("InventoryComponent");
+	
 	
 }
 
@@ -33,8 +44,6 @@ void ASTCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	GetMesh()->HideBoneByName(FName("neck_01"), EPhysBodyOp::PBO_None);
-
-
 	
 	ASTPlayerState* PS = GetPlayerState<ASTPlayerState>();
 	if (PS)
@@ -49,14 +58,31 @@ void ASTCharacter::BeginPlay()
 	AddStartupEffects();
 	
 	AddCharacterAbilities();
-}
 
+	InteractionSphere->OnComponentBeginOverlap.AddDynamic(this, &ASTCharacter::OnBeginOverlapInteractionSphere);
+	InteractionSphere->OnComponentEndOverlap.AddDynamic(this, &ASTCharacter::OnEndOverlapInteractionSphere);
+}
 
 // Called every frame
 void ASTCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UWorld* World = GetWorld();
+
+	if (!World) {return;}
+	
+	FHitResult HitResult;
+	if(!World->LineTraceSingleByChannel(HitResult, FollowCamera->GetComponentLocation(),
+	FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * InteractionRadius, ECollisionChannel::ECC_Visibility)){return;}
+	
+	if (!HitResult.GetActor()){return;}
+	
+	if (!Cast<IInteractInterface>(HitResult.GetActor())){return;}
+
+	//UE_LOG(LogTemp, Warning, TEXT("Hitted actor %s"), *HitResult.GetActor()->GetName())
+	InteractionActor = HitResult.GetActor();
+	
 }
 
 // Called to bind functionality to input
@@ -70,6 +96,7 @@ void ASTCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAxis("Turn Right / Left", this, &ASTCharacter::Turn);
 	PlayerInputComponent->BindAction("Crouch", EInputEvent::IE_Pressed, this, &ASTCharacter::ToggleCrouch);
 	PlayerInputComponent->BindAction("Crouch", EInputEvent::IE_Released, this, &ASTCharacter::ToggleCrouch);
+	PlayerInputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &ASTCharacter::Interact);
 	
 	//TODO clarify
 	// Bind player input to the AbilitySystemComponent. Also called in OnRep_PlayerState because of a potential race condition.
@@ -110,6 +137,15 @@ void ASTCharacter::ToggleCrouch()
 	{
 		Crouch();
 	}
+}
+
+void ASTCharacter::Interact()
+{
+	if (!GetInteractionActor()) {return;}
+
+	if (!Cast<IInteractInterface>(GetInteractionActor())->CanInteract_Implementation(this)) {return;}
+	
+	Cast<IInteractInterface>(GetInteractionActor())->Interact_Implementation(this);
 }
 
 void ASTCharacter::OnRep_PlayerState()
@@ -188,6 +224,26 @@ bool ASTCharacter::IsAlive()
 	return false;
 }
 
+AActor* ASTCharacter::GetInteractionActor()
+{
+	return InteractionActor;
+}
+
+USTInventoryComponent* ASTCharacter::GetInventory()
+{
+	return InventoryComponent;
+}
+
+void ASTCharacter::OnBeginOverlapInteractionSphere(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                                   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	UE_LOG(LogTemp, Warning, TEXT("BeginOverlap %s"), *OtherActor->GetName())
+}
+
+void ASTCharacter::OnEndOverlapInteractionSphere(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	UE_LOG(LogTemp, Warning, TEXT("EndOverlap %s"), *OtherActor->GetName())
+}
 
 
 

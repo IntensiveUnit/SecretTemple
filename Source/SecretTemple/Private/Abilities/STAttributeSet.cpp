@@ -19,6 +19,7 @@ void USTAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	AActor* TargetActor = nullptr;
 	AController* TargetController = nullptr;
 	ASTCharacter* TargetCharacter = nullptr;
+	
 
 	if (Data.Target.AbilityActorInfo.IsValid() && Data.Target.AbilityActorInfo->AvatarActor.IsValid())
 	{

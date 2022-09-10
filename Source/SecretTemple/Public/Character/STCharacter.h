@@ -7,6 +7,8 @@
 #include "Abilities/STAttributeSet.h"
 #include "Abilities/STGameplayAbility.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/STInventoryComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "STCharacter.generated.h"
@@ -61,21 +63,25 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Camera")
 	UCameraComponent* FollowCamera;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
-	TArray<FName> HiddenBones;
-
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsRunning;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Movement")
-	float WalkingSpeed = 600.f;
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Movement")
-	float RunningSpeed = 800.f;
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	float InteractionRadius;
+
+	UPROPERTY()
+	AActor* InteractionActor;
 	
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	USkeletalMeshComponent* GunComponent;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	USphereComponent* InteractionSphere;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	USTInventoryComponent* InventoryComponent;
+
 	
 	// Mouse + Gamepad
 	void LookUp(float Value);
@@ -92,10 +98,10 @@ protected:
 	//TODO add gamepad
 	//Keyboard
 	void ToggleCrouch();
-
+	
 	//TODO add gamepad
 	//Keyboard
-	void ToggleRun();
+	void Interact();
 
 	// Client only
 	virtual void OnRep_PlayerState() override;
@@ -105,10 +111,13 @@ protected:
 	// Conversely, the PlayerState might be repped before the PlayerController calls ClientRestart so the Actor's InputComponent would be null in OnRep_PlayerState.
 	void BindASCInput();
 	
-
-	
 	//Todo clarify
 	bool ASCInputBound = false;
+
+	UFUNCTION()
+	void OnBeginOverlapInteractionSphere(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+	UFUNCTION()
+	void OnEndOverlapInteractionSphere(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:	
 	// Called every frame
@@ -123,6 +132,12 @@ public:
 	void AddCharacterAbilities();
 
 	bool IsAlive();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	AActor* GetInteractionActor();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	USTInventoryComponent* GetInventory();
 	
 };
 

@@ -15,7 +15,8 @@ public class SecretTemple : ModuleRules
 			"SlateCore",
 			"GameplayAbilities",
 			"GameplayTags",
-			"GameplayTasks"
+			"GameplayTasks",
+			"UMG"
 		});
 		
 		// Uncomment if you are using online features
