@@ -52,7 +52,7 @@ bool ASTItem::UseItem(const ASTCharacter* InteractionInstigator)
 	if (!PlayerState) { return false; }
 
 	if (!PlayerState->GetAbilitySystemComponent()) { return false; }
-	PlayerState->GetAbilitySystemComponent()->ApplyGameplayEffectToSelf(ItemInfo.ItemEffect);
+//	PlayerState->GetAbilitySystemComponent()->ApplyGameplayEffectToSelf(ItemInfo.ItemEffect);
 	
 	
 	return true;

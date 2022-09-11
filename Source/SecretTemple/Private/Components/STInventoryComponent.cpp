@@ -248,7 +248,7 @@ bool USTInventoryComponent::UseItem(const FItem& InItem)
 
 		if (Item)
 		{
-			Item->UseItem();
+	//		Item->UseItem();
 		}
 		
 		OnInventoryUpdated.Broadcast();
