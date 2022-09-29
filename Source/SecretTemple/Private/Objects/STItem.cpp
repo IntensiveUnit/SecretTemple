@@ -9,10 +9,8 @@
 ASTItem::ASTItem(const FObjectInitializer &ObjectInitializer):
 Super(ObjectInitializer)
 {
-	PivotStaticMesh = CreateDefaultSubobject<USceneComponent>("PivotStaticMesh");
-	SkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>("SkeletalMeshComponent");
-	
-	SkeletalMeshComponent->SetupAttachment(PivotStaticMesh);
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("SkeletalMeshComponent");
+	SetRootComponent(StaticMesh);
 }
 
 void ASTItem::PostInitializeComponents()
@@ -39,21 +37,26 @@ void ASTItem::PostInitializeComponents()
 		UE_LOG(LogTemp, Warning, TEXT("No skeletal mesh for %s in, actor %s will be invisible"), *DataTableItemName.RowName.ToString(), *this->GetName());
 	}
 
-	//SkeletalMeshComponent->SetSkeletalMesh(ItemStaticMesh);
+	StaticMesh->SetStaticMesh(ItemInfo.StaticMesh);
 }
 
 bool ASTItem::UseItem(const ASTCharacter* InteractionInstigator)
 {
 	if (!ItemInfo.ItemEffect) { return false; }
+
+	if (!InteractionInstigator){ return false; }
 	
 	if (!InteractionInstigator->GetPlayerState()) { return false;}
-	const ASTPlayerState* PlayerState = Cast<ASTPlayerState>(InteractionInstigator->GetPlayerState());
-
+	
+	const ASTPlayerState* PlayerState = InteractionInstigator->GetPlayerState<ASTPlayerState>();
 	if (!PlayerState) { return false; }
 
-	if (!PlayerState->GetAbilitySystemComponent()) { return false; }
-//	PlayerState->GetAbilitySystemComponent()->ApplyGameplayEffectToSelf(ItemInfo.ItemEffect);
+	UAbilitySystemComponent* GameplayAbilitySystemComponent = PlayerState->GetAbilitySystemComponent();
+	if (!GameplayAbilitySystemComponent) { return false; }
 	
+	GameplayAbilitySystemComponent->ApplyGameplayEffectToSelf(ItemInfo.ItemEffect.GetDefaultObject(), 1, GameplayAbilitySystemComponent->MakeEffectContext());
+
+	Destroy();
 	
 	return true;
 }

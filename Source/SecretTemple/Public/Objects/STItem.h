@@ -3,15 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/STGameState.h"
 #include "Engine/DataTable.h"
 #include "Interfaces/InteractInterface.h"
 #include "UObject/NoExportTypes.h"
 #include "STItem.generated.h"
 
-class UGameplayEffect;
 
-//TODO Do something with converting static meshes to skeletal meshes
+
 USTRUCT(BlueprintType, Blueprintable)
 struct FItem : public FTableRowBase
 {
@@ -37,17 +35,19 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMesh* StaticMesh;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<class UGameplayEffect> ItemEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UGameplayEffect* ItemEffect;
-	
+	bool CanUseAsQuestItem;
 
 private:
 	bool bIsEmpty;
 
 public:
 	FItem(FString InName, FString InDescription, bool InCanBeStacked, int32 InAmount, FIntPoint InSize, UTexture2D* InImage,
-		UStaticMesh* InStaticMesh, UGameplayEffect* InItemEffect):
+		UStaticMesh* InStaticMesh, TSubclassOf<UGameplayEffect> InItemEffect, bool InCanUseAsQuestItem):
 	Name(InName),
 	Description(InDescription),
 	CanBeStacked(InCanBeStacked),
@@ -56,6 +56,7 @@ public:
 	Image(InImage),
 	StaticMesh(InStaticMesh),
 	ItemEffect(InItemEffect),
+	CanUseAsQuestItem(InCanUseAsQuestItem),
 	bIsEmpty(false)
 	{}
 
@@ -68,6 +69,7 @@ public:
 	Image(nullptr),
 	StaticMesh(nullptr),
 	ItemEffect(nullptr),
+	CanUseAsQuestItem(false),
 	bIsEmpty(true)
 	{}
 
@@ -79,7 +81,8 @@ public:
 	Size(InItem->Size),
 	Image(InItem->Image),
 	StaticMesh(InItem->StaticMesh),
-	ItemEffect(InItem->ItemEffect), 
+	ItemEffect(InItem->ItemEffect),
+	CanUseAsQuestItem(InItem->CanUseAsQuestItem),
 	bIsEmpty(false)
 	{}
 
@@ -138,13 +141,9 @@ public:
 	//Properties
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	FDataTableRowHandle DataTableItemName;
-
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	USceneComponent* PivotStaticMesh;
 	
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	USkeletalMeshComponent* SkeletalMeshComponent;
-	
+	UStaticMeshComponent* StaticMesh;
 	
 	
 };

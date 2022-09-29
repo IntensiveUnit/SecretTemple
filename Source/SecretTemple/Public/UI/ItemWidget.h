@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommonActivatableWidget.h"
 #include "DraggedItemWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "ItemWidget.generated.h"
@@ -14,7 +15,7 @@ class UGridWidget;
  * USlotWidget
  */
 UCLASS()
-class SECRETTEMPLE_API UItemWidget : public UUserWidget
+class SECRETTEMPLE_API UItemWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 

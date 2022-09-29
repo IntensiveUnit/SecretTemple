@@ -13,6 +13,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "STCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionInterrupted);
+
 UCLASS()
 class SECRETTEMPLE_API ASTCharacter : public ACharacter
 {
@@ -31,7 +33,6 @@ protected:
 	// Just make sure you test if the pointer is valid before using.
 	// I opted for TWeakObjectPtrs because I didn't want a shared hard reference here and I didn't want an extra function call of getting
 	// the ASC/AttributeSet from the PlayerState or child classes every time I referenced them in this base class.
-
 	TWeakObjectPtr<USTAbilitySystemComponent> AbilitySystemComponent;
 	TWeakObjectPtr<USTAttributeSet> AttributeSet;
 
@@ -46,6 +47,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void PostInitializeComponents() override;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
 	float BaseTurnRate = 45.0f;
 
@@ -67,6 +70,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsRunning;
 
+	
+	bool IsCharacterInteracts;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	float InteractionRadius;
 
@@ -74,13 +80,13 @@ protected:
 	AActor* InteractionActor;
 	
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	USkeletalMeshComponent* GunComponent;
-
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	USphereComponent* InteractionSphere;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	USTInventoryComponent* InventoryComponent;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	USkeletalMeshComponent* ToolComponent;
 
 	
 	// Mouse + Gamepad
@@ -90,6 +96,7 @@ protected:
 	void Turn(float Value);
 
 	// KeyBoard + Gamepad
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void MoveForward(float Value);
 
 	// KeyBoard + Gamepad
@@ -101,11 +108,10 @@ protected:
 	
 	//TODO add gamepad
 	//Keyboard
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void Interact();
-
-	// Client only
-	virtual void OnRep_PlayerState() override;
-
+	
+	
 	// Called from both SetupPlayerInputComponent and OnRep_PlayerState because of a potential race condition where the PlayerController might
 	// call ClientRestart which calls SetupPlayerInputComponent before the PlayerState is repped to the client so the PlayerState would be null in SetupPlayerInputComponent.
 	// Conversely, the PlayerState might be repped before the PlayerController calls ClientRestart so the Actor's InputComponent would be null in OnRep_PlayerState.
@@ -138,6 +144,21 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	USTInventoryComponent* GetInventory();
-	
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	USkeletalMeshComponent* GetToolComponent();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	bool GetIsCharacterInteracts();
+
+	//This function is needed for actors that have a camera,
+	//so that it doesn’t happen that the character clicked interaction,
+	//the camera moved, control was taken away, but before that he had time to move the cursor and GetInteractionActor was overwritten
+	UFUNCTION(BlueprintCallable)
+	bool SetIsCharacterInteracts(AActor* ActorToInteract);
+
+	//Delegates
+	UPROPERTY(BlueprintAssignable)	
+	FInteractionInterrupted OnInteractionInterrupted;
 };
 

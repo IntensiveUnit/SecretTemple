@@ -5,6 +5,7 @@
 
 #include "Character/STCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Objects/CollectibleItem.h"
 
 
 // Sets default values for this component's properties
@@ -25,10 +26,24 @@ void USTInventoryComponent::OnComponentCreated()
 	SimulatedInventory.Empty(InventorySize.X * InventorySize.Y);
 	SimulatedInventory.Init(FItem(),InventorySize.X * InventorySize.Y);
 	
-	for (auto Item : StartupItems)
+	for (const auto& DataTableRowHandle : StartupStandardItems)
 	{
-		AddItem(Item.Item);
+		if (!DataTableRowHandle.DataTable || DataTableRowHandle.RowName.IsNone()) { continue; }
+		
+		FItem ItemInfo = DataTableRowHandle.DataTable->FindRow<FItem>(DataTableRowHandle.RowName, "");
+		
+		if (!ItemInfo.IsEmpty()){ continue; }
+		
+		AddItem(ItemInfo);
 	}
+
+	for (const auto& CollectibleItem : StartupCollectibleItems)
+	{
+		if (!CollectibleItem) { continue; }
+		
+		AddCollectibleItemToInventory(CollectibleItem);
+	}
+	
 }
 
 
@@ -68,6 +83,12 @@ bool USTInventoryComponent::AddItem(const FItem& InItem)
 	
 	return CanAddItem;
 	
+}
+
+bool USTInventoryComponent::AddCollectibleItemToInventory(ACollectibleItem* InCollectibleItem)
+{
+	CollectibleItems.Add(InCollectibleItem);
+	return true;
 }
 
 bool USTInventoryComponent::AddItemAtCoordinates(const FItem& InItem, const FIntPoint& InCoordinate)
@@ -130,6 +151,12 @@ bool USTInventoryComponent::RemoveItemFromInventory(const FItem& InItem)
 	}
 	
 	return CanRemoveItem;
+}
+
+bool USTInventoryComponent::RemoveCollectibleItemFromInventory(ACollectibleItem* InCollectibleItem)
+{
+	CollectibleItems.Remove(InCollectibleItem);
+	return true;
 }
 
 bool USTInventoryComponent::RemoveItemFromInventoryAtCoordinate(const FItem& InItem, const FIntPoint& InCoordinate)
@@ -230,31 +257,35 @@ bool USTInventoryComponent::UseItem(const FItem& InItem)
 {
 	FIntPoint Coordinate;
 	
-	bool bItemWasUsed = false;
+	bool bItemWasFounded = false;
 	
 	for (auto const &Item : Items)
 	{
 		if (Item.Item == InItem)
 		{
 			Coordinate = Item.Coordinate;
-			bItemWasUsed = true;
+			bItemWasFounded = true;
 		}
 		break;
 	}
-
-	if (bItemWasUsed)
+	
+	if (bItemWasFounded)
 	{
+		if(!GetOwner()) { return false; }
+		const ASTCharacter* OwningCharacter = Cast<ASTCharacter>(GetOwner());
+		
+		if (!OwningCharacter) {return false; }
 		ASTItem* Item = DropItemInWorldAtCoordinate(InItem, Coordinate);
 
 		if (Item)
 		{
-	//		Item->UseItem();
+			Item->UseItem(OwningCharacter);
 		}
 		
 		OnInventoryUpdated.Broadcast();
 	}
-
-	return bItemWasUsed;
+	
+	return bItemWasFounded;
 	
 }
 
@@ -262,23 +293,24 @@ bool USTInventoryComponent::UseItem(const FItem& InItem)
 bool USTInventoryComponent::UseItemAtCoordinate(const FItem& InItem, const FIntPoint& InCoordinate)
 {
 	
-	bool bItemWasUsed = false;
+	bool bItemWasFounded = false;
 	
 	for (auto const &Item : Items)
 	{
 		if (Item.Item == InItem && Item.Coordinate == InCoordinate)
 		{
-			bItemWasUsed = true;
+			bItemWasFounded = true;
+			break;
 		}
-		break;
+		
 	}
 
-	if (bItemWasUsed)
+	if (bItemWasFounded)
 	{
 		if(!GetOwner()) { return false; }
 		const ASTCharacter* OwningCharacter = Cast<ASTCharacter>(GetOwner());
 		
-		if (OwningCharacter) {return false; }
+		if (!OwningCharacter) {return false; }
 		ASTItem* Item = DropItemInWorldAtCoordinate(InItem, InCoordinate);
 
 		if (Item)
@@ -289,7 +321,7 @@ bool USTInventoryComponent::UseItemAtCoordinate(const FItem& InItem, const FIntP
 		OnInventoryUpdated.Broadcast();
 	}
 
-	return bItemWasUsed;
+	return bItemWasFounded;
 }
 
 ASTItem* USTInventoryComponent::DropItemInWorld(const FItem& InItem)
@@ -304,8 +336,9 @@ ASTItem* USTInventoryComponent::DropItemInWorld(const FItem& InItem)
 		{
 			Coordinate = Item.Coordinate;
 			bItemWasDropped = true;
+			break;
 		}
-		break;
+		
 	}
 
 	ASTItem* DroppedItem = nullptr;
@@ -333,8 +366,9 @@ ASTItem* USTInventoryComponent::DropItemInWorldAtCoordinate(const FItem& InItem,
 		if (Item.Item == InItem && Item.Coordinate == InCoordinate)
 		{
 			bItemWasDropped = true;
+			break;
 		}
-		break;
+		
 	}
 	
 	ASTItem* DroppedItem = nullptr;
@@ -378,6 +412,12 @@ ASTItem* USTInventoryComponent::DropItemInWorld_Internal(const FItem& InItem)
 TArray<FInventoryItem>& USTInventoryComponent::GetItems()
 {
 	return Items;
+}
+
+//TODO TArray<ACollectibleItem*>* Array of ref or ref on array with refs?
+TArray<ACollectibleItem*> USTInventoryComponent::GetCollectibleItems()
+{
+	return CollectibleItems;
 }
 
 

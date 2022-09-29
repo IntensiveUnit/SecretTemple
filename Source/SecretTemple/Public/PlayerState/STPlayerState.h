@@ -28,7 +28,7 @@ public:
 	
 protected:
 	UPROPERTY(EditDefaultsOnly)
-	USTAbilitySystemComponent* AbilitySystemComponent;
+	USTAbilitySystemComponent* GameplayAbilitySystemComponent;
 
 	UPROPERTY()
 	USTAttributeSet* AttributeSet;

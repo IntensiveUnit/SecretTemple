@@ -90,17 +90,24 @@ void USTAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 
 		}
 	}
+
+	if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		//Handle Mana changes
+		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
+	}
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		//Handle Health changes
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+	}
 	
 	if (Data.EvaluatedData.Attribute == GetStaminaAttribute())
 	{
 		//Handle stamina changes
 		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
 	}
-
-	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
-	{
-		//Handle health changes
-		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
-	}
+	
 }
 

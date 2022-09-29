@@ -24,11 +24,24 @@ class SECRETTEMPLE_API USTAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 public:
 
+	
 	// Damage is a meta attribute used by the DamageExecution to calculate final damage, which then turns into -Health
 	// Temporary value that only exists on the Server. Not replicated.
 	UPROPERTY(BlueprintReadOnly, Category = "Damage")
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS(USTAttributeSet, Damage)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	FGameplayAttributeData Mana;
+	ATTRIBUTE_ACCESSORS(USTAttributeSet, Mana)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	FGameplayAttributeData MaxMana;
+	ATTRIBUTE_ACCESSORS(USTAttributeSet, MaxMana)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	FGameplayAttributeData ManaRegen;
+	ATTRIBUTE_ACCESSORS(USTAttributeSet, ManaRegen)
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FGameplayAttributeData Health;

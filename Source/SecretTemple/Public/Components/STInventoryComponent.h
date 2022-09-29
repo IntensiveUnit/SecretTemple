@@ -11,7 +11,10 @@
  * Delegates
  */
 
+class ACollectibleItem;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInventoryEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemAdded, struct FItem, Item);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryCollectibleItemAdded, class ACollectibleItem*, Item);
 
 USTRUCT(BlueprintType, Blueprintable)
 struct FInventoryItem
@@ -61,13 +64,14 @@ protected:
 	
 	TArray<FItem> SimulatedInventory;
 
-	TArray<FIntPoint> FreeCells;
-
 public:
 	//Functions, etc...
 	
 	UFUNCTION(BlueprintCallable)
 	bool AddItem(const FItem& InItem);
+
+	UFUNCTION(BlueprintCallable)
+	bool AddCollectibleItemToInventory(ACollectibleItem* InCollectibleItem);
 
 	UFUNCTION(BlueprintCallable)
 	bool AddItemAtCoordinates(const FItem& InItem, const FIntPoint& InCoordinate);
@@ -82,6 +86,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool RemoveItemFromInventory(const FItem& InItem);
+
+	UFUNCTION(BlueprintCallable)
+	bool RemoveCollectibleItemFromInventory(ACollectibleItem* InCollectibleItem);
 
 	UFUNCTION(BlueprintCallable)
 	bool RemoveItemFromInventoryAtCoordinate(const FItem& InItem, const FIntPoint& InCoordinate);
@@ -108,6 +115,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	TArray<FInventoryItem>& GetItems();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	TArray<ACollectibleItem*> GetCollectibleItems();
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	TArray<FIntPoint> GetAllCells();
@@ -124,19 +134,31 @@ public:
 	//Properties
 	UPROPERTY()
 	TArray<FInventoryItem> Items;
+
+	UPROPERTY()
+	TArray<ACollectibleItem*> CollectibleItems;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FIntPoint InventorySize;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 1.0f, UIMin = 1.0f), Category = "Inventory")
 	float CellSize;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TArray<FDataTableRowHandle> StartupStandardItems;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TArray<FInventoryItem> StartupItems;
+	TArray<ACollectibleItem*> StartupCollectibleItems;
 
 	//Delegates
 	UPROPERTY(BlueprintAssignable)	
 	FInventoryEvent OnInventoryUpdated;
+
+	UPROPERTY(BlueprintAssignable)	
+	FInventoryItemAdded OnItemAdded;
+
+	UPROPERTY(BlueprintAssignable)	
+	FInventoryCollectibleItemAdded OnCollectibleItemAdded;
 	
 };
 
