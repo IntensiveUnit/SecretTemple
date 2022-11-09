@@ -8,9 +8,9 @@
 #include "UI/GridWidget.h"
 
 
-void UItemWidget::SetItemData(const FInventoryItem& InInventoryItem, UGridWidget* InParentWidget)
+void UItemWidget::SetItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget)
 {
-	ItemInfo = InInventoryItem;
+	InventoryItemInfo = InInventoryItem;
 	ParentWidget = InParentWidget;
 }
 
@@ -44,6 +44,7 @@ FReply UItemWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPo
 {
 	bMouseWasDragging = false;
 	SetColor(LastStateColor);
+	OnItemWidgetClicked.Broadcast(this);
 	return FReply::Handled();
 }
 
@@ -71,7 +72,7 @@ void UItemWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, U
 	LastStateColor = DefaultColor;
 	
 	const UDraggedItemWidget* DraggedItemWidget = Cast<UDraggedItemWidget>(InOperation->DefaultDragVisual);
-	ParentWidget->Inventory->AddItemAtCoordinates(DraggedItemWidget->InventoryItem.Item, DraggedItemWidget->InventoryItem.Coordinate);
+	ParentWidget->Inventory->AddItem(FInventoryItemInfo(DraggedItemWidget->InventoryItemInfo.Item, DraggedItemWidget->InventoryItemInfo.Coordinate));
 	
 }
 
@@ -84,7 +85,7 @@ void UItemWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPoint
 	UDraggedItemWidget* DraggedSlotWidget = CreateWidget<UDraggedItemWidget>(GetOwningPlayer(), DraggedSlotWidgetClass);
 	check(DraggedSlotWidget != nullptr);
 
-	DraggedSlotWidget->SetDraggedItemData(ItemInfo, ParentWidget);
+	DraggedSlotWidget->SetDraggedItemData(InventoryItemInfo, ParentWidget);
 	DraggedSlotWidget->SetDraggedItemSize(ParentWidget->Inventory->CellSize);
 
 	UDragDropOperation* DragDropOperation = NewObject<UDragDropOperation>(GetOwningPlayer());
@@ -93,7 +94,7 @@ void UItemWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPoint
 	DragDropOperation->DefaultDragVisual = DraggedSlotWidget;
 	DragDropOperation->Pivot = EDragPivot::TopLeft;
 
-	ParentWidget->Inventory->RemoveItemFromInventoryAtCoordinate(ItemInfo.Item, ItemInfo.Coordinate);
+	ParentWidget->Inventory->RemoveItem(FInventoryItemInfo(InventoryItemInfo.Item, InventoryItemInfo.Coordinate));
 	OutOperation = DragDropOperation;
 }
 

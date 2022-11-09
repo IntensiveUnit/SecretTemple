@@ -9,7 +9,9 @@
 #include "ItemWidget.generated.h"
 
 class UGridWidget;
+class UItemWidget;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemWidgetClicked, UItemWidget*, ItemWidget);
 
 /**
  * USlotWidget
@@ -22,7 +24,7 @@ class SECRETTEMPLE_API UItemWidget : public UCommonActivatableWidget
 public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Slot")
-	void SetItemData(const FInventoryItem& InInventoryItem, UGridWidget* InParentWidget);
+	void SetItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget);
 	
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Slot")
 	void SetSize(const float NewSize);
@@ -42,10 +44,9 @@ public:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Slot")
 	UGridWidget* ParentWidget;
-
-	//TODO rename to InventoryItem? need naming for just items, inventory item etc...
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Slot")
-	FInventoryItem ItemInfo;
+	
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Slot", meta = (ExposeOnSpawn=true))
+	FInventoryItemInfo InventoryItemInfo;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Slot")
 	FSlateBrush DefaultColor;
@@ -64,5 +65,8 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Slot")
 	TSubclassOf<UDraggedItemWidget> DraggedSlotWidgetClass;
+
+	UPROPERTY(BlueprintCallable, BlueprintAssignable)
+	FOnItemWidgetClicked OnItemWidgetClicked;
 	
 };

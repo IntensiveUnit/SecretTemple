@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "UObject/ObjectMacros.h"
 
 UENUM(BlueprintType)
-enum class ESTAbilityInputID : uint8
+enum class EAbilityInputID : uint8
 {
 	// 0 None
 	None			UMETA(DisplayName = "None"),

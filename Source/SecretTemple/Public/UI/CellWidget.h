@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/InventoryComponent.h"
 #include "CellWidget.generated.h"
 
 class UGridWidget;
@@ -19,7 +20,7 @@ class SECRETTEMPLE_API UCellWidget : public UUserWidget
 public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Cell")
-	void SetCellData(const FIntPoint& InCoordinates, float InSize, UGridWidget* InParentWidget);
+	void SetCellData(const FItemCoordinate& InCoordinates, float InSize, UGridWidget* InParentWidget);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnCellDataReceived();
@@ -31,7 +32,7 @@ public:
 	void SetCellSize(const float NewSize);
 	
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Cell")
-	FIntPoint Coordinates;
+	FItemCoordinate Coordinates;
 	
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Cell")
 	float CellSize;

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/STInventoryComponent.h"
+#include "Components/InventoryComponent.h"
 #include "DraggedItemWidget.generated.h"
 
 
@@ -21,7 +21,7 @@ class SECRETTEMPLE_API UDraggedItemWidget : public UUserWidget
 public:
 	
 	UFUNCTION(BlueprintCallable, Category = "DraggedItem")
-	void SetDraggedItemData(const FInventoryItem& InInventoryItem, UGridWidget* InParentWidget);
+	void SetDraggedItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "DraggedItem")
 	void OnDraggedItemDataReceived();
@@ -32,8 +32,8 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "DraggedItem")
 	UGridWidget* ParentWidget;
 
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "DraggedItem")
-	FInventoryItem InventoryItem;
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "DraggedItem", meta = (ExposeOnSpawn=true))
+	FInventoryItemInfo InventoryItemInfo;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DraggedItem")
 	FSlateBrush ValidPlacementColor;

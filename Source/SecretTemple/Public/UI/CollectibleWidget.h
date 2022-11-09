@@ -36,7 +36,6 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly)
 	FVector2D EndCursorLocation;
-
 	
 	UFUNCTION(BlueprintImplementableEvent)
 	void MouseWheel(float Delta);

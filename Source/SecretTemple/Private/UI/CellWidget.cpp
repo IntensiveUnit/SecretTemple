@@ -5,10 +5,11 @@
 #include "Blueprint/DragDropOperation.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/GridSlot.h"
+#include "Objects/InventoryItem.h"
 #include "UI/GridWidget.h"
 #include "UI/ItemWidget.h"
 
-void UCellWidget::SetCellData(const FIntPoint& InCoordinates, const float InSize, UGridWidget* InParentWidget)
+void UCellWidget::SetCellData(const FItemCoordinate& InCoordinates, const float InSize, UGridWidget* InParentWidget)
 {
 	ParentWidget = InParentWidget;
 	Coordinates = InCoordinates;
@@ -73,15 +74,15 @@ void UCellWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDrop
 	}
 
 	//TODO Refactor coordinates to coordinate
-	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItem.Item, Coordinates))
+	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo(), Coordinates))
 	{
-		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItem.Item.Size.X; ++I)
+		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.X; ++I)
 		{
-			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItem.Item.Size.Y; ++J)
+			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.Y; ++J)
 			{
 				for (UCellWidget* CellWidget : ParentWidget->CellWidgets)
 				{
-					if (CellWidget->Coordinates == FIntPoint(I,J))
+					if (CellWidget->Coordinates == FItemCoordinate(I,J))
 					{
 						CellWidget->SetCellColor(ValidPlacementColor);
 						break;
@@ -92,13 +93,13 @@ void UCellWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDrop
 	}
 	else
 	{
-		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItem.Item.Size.X; ++I)
+		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.X; ++I)
 		{
-			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItem.Item.Size.Y; ++J)
+			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.Y; ++J)
 			{
 				for (UCellWidget* CellWidget : ParentWidget->CellWidgets)
 				{
-					if (CellWidget->Coordinates == FIntPoint(I,J))
+					if (CellWidget->Coordinates == FItemCoordinate(I,J))
 					{
 						CellWidget->SetCellColor(InvalidPlacementColor);
 						break;
@@ -142,16 +143,15 @@ bool UCellWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent
 
 	for (UItemWidget* SlotWidget: ParentWidget->ItemWidgets)
 	{
-		UGridSlot* GridSlot = UWidgetLayoutLibrary::SlotAsGridSlot(SlotWidget);
-		if (GridSlot)
+		if (UGridSlot* GridSlot = UWidgetLayoutLibrary::SlotAsGridSlot(SlotWidget))
 		{
 			GridSlot->SetLayer(1);
 		}
 	}
 
-	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItem.Item, Coordinates))
+	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo(), Coordinates))
 	{
-		ParentWidget->Inventory->AddItemAtCoordinates(DraggedSlotWidget->InventoryItem.Item, Coordinates);
+		ParentWidget->Inventory->AddItem(FInventoryItemInfo(DraggedSlotWidget->InventoryItemInfo.Item, Coordinates));
 	}
 	
 	return true;

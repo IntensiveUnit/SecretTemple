@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "InteractInterface.generated.h"
 
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UInteractInterface : public UInterface
@@ -24,9 +25,15 @@ class SECRETTEMPLE_API IInteractInterface
 public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
-	bool CanInteract(class ASTCharacter* InteractionInstigator);
+	bool CanInteractWithActor(class APlayerCharacter* InteractionInstigator);
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
-	bool Interact(class ASTCharacter* InteractionInstigator);
+	bool InteractWithActor(class APlayerCharacter* InteractionInstigator);
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
+	bool UseItemOnActor(class APlayerCharacter* InteractionInstigator, class AItem* Item);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
+	bool TakeResponseFromActor(class AActor* ResponseInstigator, bool bResponse);
 	
 };

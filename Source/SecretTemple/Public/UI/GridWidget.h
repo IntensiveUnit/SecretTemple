@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/InventoryComponent.h"
 #include "GridWidget.generated.h"
 
 class USTInventoryComponent;
@@ -22,7 +23,7 @@ public:
 	void NativeOnInventoryDataReceived();
 	
 	UFUNCTION(BlueprintCallable, Category = "Grid")
-	void SetInventoryData(USTInventoryComponent* InInventory);
+	void SetInventoryData(UInventoryComponent* InInventory);
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnPrePopulateData();
@@ -55,5 +56,8 @@ public:
 	TArray<UCellWidget*> CellWidgets;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Grid")
-	USTInventoryComponent* Inventory;
+	UInventoryComponent* Inventory;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Grid")
+	bool IsCollectibleItemsGrid;
 };
