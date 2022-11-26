@@ -19,17 +19,18 @@ class SECRETTEMPLE_API UGridWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	
-	void NativeOnInventoryDataReceived();
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Grid")
 	void SetInventoryData(UInventoryComponent* InInventory);
 	
-	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
-	void OnPrePopulateData();
-
+	void NativeOnInventoryDataReceived();
+	
 	UFUNCTION()
 	void OnInventoryUpdated();
+
+	//------------------------------------------------------------------//
+	//----------------------Widgets created-----------------------------//
+	//------------------------------------------------------------------//
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnCellWidgetCreated(UCellWidget* Widget);
@@ -37,18 +38,26 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnItemWidgetCreated(UItemWidget* Widget);
 
+	//------------------------------------------------------------------//
+	//----------------------Widgets removed-----------------------------//
+	//------------------------------------------------------------------//
+	
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnItemWidgetRemoved(UItemWidget* Widget);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Grid")
 	void OnCellWidgetRemoved(UCellWidget* Widget);
+
+	//------------------------------------------------------------------//
+	//----------------------Properties----------------------------------//
+	//------------------------------------------------------------------//
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Grid")
 	TSubclassOf<UCellWidget> CellWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Grid")
 	TSubclassOf<UItemWidget> ItemWidgetClass;
-
+	
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Grid")
 	TArray<UItemWidget*> ItemWidgets;
 
@@ -57,7 +66,13 @@ public:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Grid")
 	UInventoryComponent* Inventory;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 1.0f, UIMin = 1.0f), Category = "Inventory")
+	float CellSize;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Grid")
-	bool IsCollectibleItemsGrid;
+	//------------------------------------------------------------------//
+	//----------------------Helpers-------------------------------------//
+	//------------------------------------------------------------------//
+
+	TArray<FItemCoordinate> GetAllCells() const;
 };

@@ -4,7 +4,7 @@
 #include "UI/DraggedItemWidget.h"
 #include "UI/GridWidget.h"
 
-void UDraggedItemWidget::SetDraggedItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget)
+void UDraggedItemWidget::SetDraggedItemData(const FInventoryItemSlot& InInventoryItem, UGridWidget* InParentWidget)
 {
 	InventoryItemInfo = InInventoryItem;
 	ParentWidget = InParentWidget;

@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CustomMovementComponent.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogMovementComponent, Log, All);
 /**
  * 
  */

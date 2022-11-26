@@ -6,6 +6,9 @@
 #include "Engine/DataTable.h"
 #include "UObject/ObjectMacros.h"
 
+
+
+
 UENUM(BlueprintType)
 enum class EAbilityInputID : uint8
 {

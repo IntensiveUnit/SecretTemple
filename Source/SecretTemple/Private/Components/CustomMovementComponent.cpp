@@ -2,44 +2,35 @@
 
 
 #include "Components/CustomMovementComponent.h"
-#include "Character/PlayerCharacter.h"
-#include "PlayerState/CustomPlayerState.h"
 
+#include "Abilities/CustomAttributeSet.h"
+#include "Character/PlayerCharacter.h"
+
+DEFINE_LOG_CATEGORY(LogMovementComponent);
 
 float UCustomMovementComponent::GetMaxSpeed() const
 {
 	APlayerCharacter* Owner = Cast<APlayerCharacter>(GetOwner());
 	if (!Owner)
 	{
-		UE_LOG(LogTemp, Error, TEXT("%s() No Owner"), *FString(__FUNCTION__));
-		return Super::GetMaxSpeed();
-	}
-
-	ACustomPlayerState* PlayerState = Cast<ACustomPlayerState>(Owner->GetPlayerState());
-	if (!PlayerState)
-	{
-		UE_LOG(LogTemp, Error, TEXT("%s() No PlayerState"), *FString(__FUNCTION__));
-		return Super::GetMaxSpeed();
-	}
-	
-	UCustomAttributeSet* AttributeSet = PlayerState->GetAttributeSetBase();
-	if (!AttributeSet)
-	{
-		UE_LOG(LogTemp, Error, TEXT("%s() No AttributeSetBase"), *FString(__FUNCTION__));
+		//UE_LOG(LogMovementComponent, Error, TEXT("No Owner"));
 		return Super::GetMaxSpeed();
 	}
 	
 	if (IsCrouching())
 	{
+		//UE_LOG(LogMovementComponent, Log, TEXT("Is crouching, speed is: %f"), MaxWalkSpeedCrouched);
 		return MaxWalkSpeedCrouched;
 	}
 	
 	if (bIsRunning)
 	{
-		return AttributeSet->GetRunningSpeed();
+		//UE_LOG(LogMovementComponent, Log, TEXT("Is running, speed is: %f"), Owner->GetRunningSpeed());
+		return Owner->GetRunningSpeed();
 	}
 	
-	return AttributeSet->GetWalkingSpeed();
+	//UE_LOG(LogMovementComponent, Log, TEXT("Is walking, speed is: %f"), Owner->GetWalkingSpeed());
+	return Owner->GetWalkingSpeed();
 }
 
 void UCustomMovementComponent::StartSprinting()

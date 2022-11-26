@@ -8,7 +8,7 @@
 #include "UI/GridWidget.h"
 
 
-void UItemWidget::SetItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget)
+void UItemWidget::SetItemData(const FInventoryItemSlot& InInventoryItem, const float CellSize, UGridWidget* InParentWidget)
 {
 	InventoryItemInfo = InInventoryItem;
 	ParentWidget = InParentWidget;
@@ -72,7 +72,7 @@ void UItemWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, U
 	LastStateColor = DefaultColor;
 	
 	const UDraggedItemWidget* DraggedItemWidget = Cast<UDraggedItemWidget>(InOperation->DefaultDragVisual);
-	ParentWidget->Inventory->AddItem(FInventoryItemInfo(DraggedItemWidget->InventoryItemInfo.Item, DraggedItemWidget->InventoryItemInfo.Coordinate));
+	ParentWidget->Inventory->AddInventoryItemAtCoordinate(FInventoryItemSlot(DraggedItemWidget->InventoryItemInfo));
 	
 }
 
@@ -86,7 +86,7 @@ void UItemWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPoint
 	check(DraggedSlotWidget != nullptr);
 
 	DraggedSlotWidget->SetDraggedItemData(InventoryItemInfo, ParentWidget);
-	DraggedSlotWidget->SetDraggedItemSize(ParentWidget->Inventory->CellSize);
+	DraggedSlotWidget->SetDraggedItemSize(ParentWidget->CellSize);
 
 	UDragDropOperation* DragDropOperation = NewObject<UDragDropOperation>(GetOwningPlayer());
 	check(DragDropOperation != nullptr);
@@ -94,7 +94,7 @@ void UItemWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPoint
 	DragDropOperation->DefaultDragVisual = DraggedSlotWidget;
 	DragDropOperation->Pivot = EDragPivot::TopLeft;
 
-	ParentWidget->Inventory->RemoveItem(FInventoryItemInfo(InventoryItemInfo.Item, InventoryItemInfo.Coordinate));
+	ParentWidget->Inventory->RemoveInventoryItemAtCoordinate(FInventoryItemSlot(InventoryItemInfo));
 	OutOperation = DragDropOperation;
 }
 

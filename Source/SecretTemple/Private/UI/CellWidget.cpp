@@ -73,12 +73,12 @@ void UCellWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDrop
 		CellWidget->SetCellColor(CellWidget->DefaultColor);
 	}
 
-	//TODO Refactor coordinates to coordinate
-	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo(), Coordinates))
+	//TODO move iteration in function
+	if (ParentWidget->Inventory->CanFitItemAtCoordinate(FInventoryItemSlot(DraggedSlotWidget->InventoryItemInfo)))
 	{
-		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.X; ++I)
+		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.InventoryItem->GetInventoryItemData().Size.X; ++I)
 		{
-			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.Y; ++J)
+			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.InventoryItem->GetInventoryItemData().Size.Y; ++J)
 			{
 				for (UCellWidget* CellWidget : ParentWidget->CellWidgets)
 				{
@@ -93,9 +93,9 @@ void UCellWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDrop
 	}
 	else
 	{
-		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.X; ++I)
+		for (int I = Coordinates.X; I < Coordinates.X + DraggedSlotWidget->InventoryItemInfo.InventoryItem->GetInventoryItemData().Size.X; ++I)
 		{
-			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo().Size.Y; ++J)
+			for (int J = Coordinates.Y; J < Coordinates.Y + DraggedSlotWidget->InventoryItemInfo.InventoryItem->GetInventoryItemData().Size.Y; ++J)
 			{
 				for (UCellWidget* CellWidget : ParentWidget->CellWidgets)
 				{
@@ -149,9 +149,9 @@ bool UCellWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent
 		}
 	}
 
-	if (ParentWidget->Inventory->CanFitItemAtCoordinate(DraggedSlotWidget->InventoryItemInfo.Item->GetItemInfo(), Coordinates))
+	if (ParentWidget->Inventory->CanFitItemAtCoordinate(FInventoryItemSlot(DraggedSlotWidget->InventoryItemInfo)))
 	{
-		ParentWidget->Inventory->AddItem(FInventoryItemInfo(DraggedSlotWidget->InventoryItemInfo.Item, Coordinates));
+		ParentWidget->Inventory->AddInventoryItem(DraggedSlotWidget->InventoryItemInfo.InventoryItem);
 	}
 	
 	return true;

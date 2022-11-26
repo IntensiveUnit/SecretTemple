@@ -24,7 +24,7 @@ class SECRETTEMPLE_API UItemWidget : public UCommonActivatableWidget
 public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Slot")
-	void SetItemData(const FInventoryItemInfo& InInventoryItem, UGridWidget* InParentWidget);
+	void SetItemData(const FInventoryItemSlot& InInventoryItem, const float CellSize, UGridWidget* InParentWidget);
 	
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Slot")
 	void SetSize(const float NewSize);
@@ -46,7 +46,7 @@ public:
 	UGridWidget* ParentWidget;
 	
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Slot", meta = (ExposeOnSpawn=true))
-	FInventoryItemInfo InventoryItemInfo;
+	FInventoryItemSlot InventoryItemInfo;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Slot")
 	FSlateBrush DefaultColor;

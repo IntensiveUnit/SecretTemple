@@ -1,86 +1,39 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 
 #include "Character/PlayerCharacter.h"
+
+#include "AbilitySystemComponent.h"
+#include "Abilities/CustomAttributeSet.h"
 #include "Abilities/CustomGameplayAbility.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/InputComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CustomMovementComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/InputComponent.h"
+#include "Components/InventoryComponent.h"
+#include "Framework/CustomPlayerState.h"
 #include "Interfaces/InteractInterface.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "PlayerState/CustomPlayerState.h"
 #include "SecretTemple/SecretTemple.h"
 
-// Sets default values
+
 APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UCustomMovementComponent>(CharacterMovementComponentName)),
 	InteractionRadius(300.f)
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(FName("FollowCamera"));
-	FollowCamera->SetupAttachment(GetCapsuleComponent());
+	FollowCamera->SetupAttachment(GetRootComponent());
 	FollowCamera->bUsePawnControlRotation = true;
 	
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
-	
-	ToolComponent = CreateDefaultSubobject<USkeletalMeshComponent>(FName("Gun"));
 }
 
-// Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	GetMesh()->HideBoneByName(FName("neck_01"), EPhysBodyOp::PBO_None);
-
-	//TODO make this via Datatable
-	ACustomPlayerState* PS = GetPlayerState<ACustomPlayerState>();
-	if (PS)
-	{
-		// Set the ASC
-		AbilitySystemComponent = PS->GetAbilitySystemComponent();
-
-		if (PS->GetAbilitySystemComponent())
-		{
-			//We do this to make sure that all the information about the actor will definitely be in the abilities
-			PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
-		}
-		
-		
-	}
-	
-	AddStartupEffects();
-	
-	AddCharacterAbilities();
 }
 
-void APlayerCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-	/*
-	if (ToolComponent && GetMesh())
-	{
-		ToolComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
-	}
-	*/
-	
-	UPawnMovementComponent* PawnMovementComponent = GetMovementComponent();
-	if (!PawnMovementComponent) { return; }
-	
-	UCustomMovementComponent* CustomPawnMovementComponent = Cast<UCustomMovementComponent>(PawnMovementComponent);
-	if (!CustomPawnMovementComponent) { return; }
-
-	CustomPawnMovementComponent->MaxFlySpeed = CustomPawnMovementComponent->MaxWalkSpeedCrouched;
-	CustomPawnMovementComponent->BrakingDecelerationFlying = 2000.f;
-}
-
-// Called every frame
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -92,19 +45,25 @@ void APlayerCharacter::Tick(float DeltaTime)
 		InteractionActor = nullptr;
 		return;
 	}
-
+	
 	if (IsCharacterInteracts){ return; }
 	
 	FHitResult HitResult;
+	const float InteractionSphereRadius = 5.f;
 	
 	if(!World->SweepSingleByChannel(HitResult, FollowCamera->GetComponentLocation(),
 		FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * InteractionRadius,
-		FQuat::Identity, ECollisionChannel::ECC_Visibility, FCollisionShape::MakeSphere(5.f)))
+		FQuat::Identity, ECollisionChannel::ECC_Visibility, FCollisionShape::MakeSphere(InteractionSphereRadius)))
 	{
 		InteractionActor = nullptr;
 		return;
 	}
-	DrawDebugSphere(GetWorld(),HitResult.Location, 10.f, 16, InteractionActor ? FColor::Green : FColor::Red);
+
+	//We draw a debug sphere for convenience, instead of a crosshair
+	const float DebugSphereRadius = 10.f;
+	const float DebugSphereSegments = 16.f;
+	DrawDebugSphere(GetWorld(),HitResult.Location, DebugSphereRadius, DebugSphereSegments, InteractionActor ? FColor::Green : FColor::Red);
+	
 	if (!HitResult.GetActor())
 	{
 		InteractionActor = nullptr;
@@ -118,11 +77,18 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 	
 	InteractionActor = HitResult.GetActor();
-	
-	
 }
 
-// Called to bind functionality to input
+void APlayerCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	
+	//Used for stairs, when a character approaches them, the fly mode is activated.
+	//GetCharacterMovementComponent()->MaxFlySpeed = GetCharacterMovementComponent()->MaxWalkSpeedCrouched;
+	
+	//GetCharacterMovementComponent()->BrakingDecelerationFlying = GetCharacterMovementComponent()->MaxAcceleration;
+}
+
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -135,9 +101,20 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Crouch", EInputEvent::IE_Released, this, &APlayerCharacter::ToggleCrouch);
 	PlayerInputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &APlayerCharacter::Interact);
 	
-	//TODO clarify
-	// Bind player input to the AbilitySystemComponent. Also called in OnRep_PlayerState because of a potential race condition.
+	// Bind player input to the AbilitySystemComponent
 	BindASCInput();
+}
+
+void APlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	GetAbilitySystemComponent()->InitAbilityActorInfo(GetPlayerState(),this);
+	
+	AddStartupEffects();
+	
+	AddCharacterAbilities();
+	
 }
 
 void APlayerCharacter::LookUp(float Value)
@@ -158,47 +135,47 @@ void APlayerCharacter::MoveForward_Implementation(float Value)
 {
 	if (Value == 0){ return; }
 	
-	if (IsCharacterInteracts){ OnInteractionInterrupted.Broadcast(); }
+	InterruptCharacterInteraction();
 
-	//TODO rewrite this when ladder will be Ability via GameplayAbility
-	UPawnMovementComponent* PawnMovementComponent = GetMovementComponent();
-	if (!PawnMovementComponent) { return; }
+	if (!GetCharacterMovementComponent())
+	{ 
+		return;
+	}
 	
-	UCustomMovementComponent* CustomPawnMovementComponent = Cast<UCustomMovementComponent>(PawnMovementComponent);
-	if (!CustomPawnMovementComponent) { return; }
-	
-	if (CustomPawnMovementComponent->MovementMode == EMovementMode::MOVE_Flying)
+	//TODO Instead of all this made ladder via GameplayAbility
+	if (GetCharacterMovementComponent()->MovementMode == EMovementMode::MOVE_Flying)
 	{
-		
-		//UE_LOG(LogTemp, Warning, TEXT("%f"), FVector::DotProduct(FollowCamera->GetForwardVector(), GetActorUpVector()));
+		//No explanation of magic literals because a piece of code will be removed
 		FVector MovementVector = FVector::DotProduct(FollowCamera->GetForwardVector(), GetActorUpVector()) > -0.5f ? GetActorUpVector() : GetActorUpVector() * -1 + FollowCamera->GetForwardVector();
 		MovementVector.Normalize();
 		AddMovementInput(MovementVector, Value);
 	}
 	else
 	{
-		AddMovementInput(UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0)), Value);
+		const FVector MovementVector = UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0));
+		AddMovementInput(MovementVector, Value);
 	}
 }
-
 
 void APlayerCharacter::MoveRight(float Value)
 {
 	if (Value == 0){ return ;}
 	
-	if (IsCharacterInteracts){ OnInteractionInterrupted.Broadcast(); }
+	InterruptCharacterInteraction();
+	
 	AddMovementInput(UKismetMathLibrary::GetRightVector(FRotator(0, GetControlRotation().Yaw, 0)), Value);
 }
 
 void APlayerCharacter::ToggleCrouch()
 {
-	if (IsCharacterInteracts){ OnInteractionInterrupted.Broadcast(); }
+	InterruptCharacterInteraction();
 	
-	UPawnMovementComponent* PawnMovementComponent = GetMovementComponent();
-	if (!PawnMovementComponent) { return; }
+	if (!GetCharacterMovementComponent())
+	{ 
+		return;
+	}
 	
-	UCustomMovementComponent* CustomPawnMovementComponent = Cast<UCustomMovementComponent>(PawnMovementComponent);
-	if (CustomPawnMovementComponent->MovementMode == EMovementMode::MOVE_Flying)
+	if (GetCharacterMovementComponent()->MovementMode == EMovementMode::MOVE_Flying)
 	{
 		return;
 	}
@@ -215,7 +192,7 @@ void APlayerCharacter::ToggleCrouch()
 
 void APlayerCharacter::Interact_Implementation()
 {
-	if (IsCharacterInteracts){ OnInteractionInterrupted.Broadcast(); }
+	InterruptCharacterInteraction();
 	
 	if (!GetInteractionActor()) {return;}
 	
@@ -224,54 +201,39 @@ void APlayerCharacter::Interact_Implementation()
 	IInteractInterface::Execute_InteractWithActor(GetInteractionActor(), this);
 }
 
-
 void APlayerCharacter::BindASCInput()
 {
-	ACustomPlayerState* PS = GetPlayerState<ACustomPlayerState>();
-	if (PS)
+	if (GetAbilitySystemComponent() && IsValid(InputComponent))
 	{
-		// Set the ASC on the Server. Clients do this in OnRep_PlayerState()
-		AbilitySystemComponent = PS->GetAbilitySystemComponent();
-	}
-	
-	if (!ASCInputBound && AbilitySystemComponent.IsValid() && IsValid(InputComponent))
-	{
-		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+		GetAbilitySystemComponent()->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
 			FString("CancelTarget"), FString("EAbilityInputID"), static_cast<int32>(EAbilityInputID::Confirm), static_cast<int32>(EAbilityInputID::Cancel)));
-
-		ASCInputBound = true;
 	}
-
 }
-
 
 void APlayerCharacter::AddStartupEffects()
 {
-	if (!AbilitySystemComponent.IsValid() || StartupEffectsApplied)
+	if (!GetAbilitySystemComponent())
 	{
 		return;
 	}
 
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponent()->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
 
 	for (const TSubclassOf<UGameplayEffect> GameplayEffect : StartupEffects)
 	{
-		FGameplayEffectSpecHandle NewHandle = AbilitySystemComponent->MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
+		FGameplayEffectSpecHandle NewHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
 		if (NewHandle.IsValid())
 		{
-			FActiveGameplayEffectHandle ActiveHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), AbilitySystemComponent.Get());
-			
+			GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), GetAbilitySystemComponent());
 		}
 	}
-
-	StartupEffectsApplied = true;
+	
 }
 
 void APlayerCharacter::AddCharacterAbilities()
 {
-	// Grant abilities, but only on the server	
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || CharacterAbilitiesGiven)
+	if (!GetAbilitySystemComponent())
 	{
 		return;
 	}
@@ -279,22 +241,56 @@ void APlayerCharacter::AddCharacterAbilities()
 	for (TSubclassOf<UCustomGameplayAbility>& StartupAbility : CharacterAbilities)
 	{
 		
-		AbilitySystemComponent->GiveAbility(
+		GetAbilitySystemComponent()->GiveAbility(
 			FGameplayAbilitySpec(StartupAbility, 1, static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID), this));
 	}
+	
+}
 
-	CharacterAbilitiesGiven = true;
+UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent()
+{
+	if (AbilitySystemComponent)
+	{
+		return AbilitySystemComponent;
+	}
+	else
+	{
+		ACustomPlayerState* CustomPlayerState = GetPlayerState<ACustomPlayerState>();
+	
+		if (!CustomPlayerState) { UE_LOG(LogTemp, Error, TEXT("No CustomPlayerState in character for AbilitySystemComponent")) return nullptr; }
+
+		if (!CustomPlayerState->GetAbilitySystemComponent()) { UE_LOG(LogTemp, Error, TEXT("No AbilitySystemComponent in CustomPlayerState")) return nullptr; }
+
+		AbilitySystemComponent = CustomPlayerState->GetAbilitySystemComponent();
+		
+		return CustomPlayerState->GetAbilitySystemComponent();
+	}
+	
+}
+
+UCustomAttributeSet* APlayerCharacter::GetAttributeSet()
+{
+	if (AttributeSet)
+	{
+		return AttributeSet;
+	}
+	else
+	{
+		ACustomPlayerState* CustomPlayerState = GetPlayerStateChecked<ACustomPlayerState>();;
+	
+		if (!CustomPlayerState) { UE_LOG(LogTemp, Error, TEXT("No CustomPlayerState in character for attributeset")) return nullptr; }
+		
+		if (!CustomPlayerState->GetAttributeSet()) { UE_LOG(LogTemp, Error, TEXT("No AttrubuteSet in CustomPlayerState")) return nullptr; }
+
+		AttributeSet = CustomPlayerState->GetAttributeSet();
+		
+		return AttributeSet;
+	}
 }
 
 bool APlayerCharacter::IsAlive()
 {
-	ACustomPlayerState* PS = GetPlayerState<ACustomPlayerState>();
-	if (PS)
-	{
-		return PS->GetAttributeSetBase()->GetHealth() > 0.f;
-	}
-
-	return false;
+	return GetAttributeSet()->GetHealth() > 0.f;
 }
 
 AActor* APlayerCharacter::GetInteractionActor()
@@ -302,14 +298,16 @@ AActor* APlayerCharacter::GetInteractionActor()
 	return InteractionActor;
 }
 
-UInventoryComponent* APlayerCharacter::GetInventory()
+FVector APlayerCharacter::GetItemDropPosition()
 {
-	return InventoryComponent;
+	//TODO create checks for obstacles ahead
+	const float Offset = 200.f;
+	return GetActorLocation() + GetActorForwardVector() * Offset; 
 }
 
-USkeletalMeshComponent* APlayerCharacter::GetToolComponent()
+UInventoryComponent* APlayerCharacter::GetInventoryComponent()
 {
-	return ToolComponent;
+	return InventoryComponent;
 }
 
 bool APlayerCharacter::GetIsCharacterInteracts()
@@ -324,7 +322,7 @@ bool APlayerCharacter::SetIsCharacterInteracts(AActor* ActorToInteract)
 		IsCharacterInteracts = false;
 		InteractionActor = nullptr;
 		return true;
-	}
+	} 
 
 	if (!ActorToInteract->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
 	{
@@ -336,9 +334,105 @@ bool APlayerCharacter::SetIsCharacterInteracts(AActor* ActorToInteract)
 	return true;
 }
 
+UCharacterMovementComponent* APlayerCharacter::GetCharacterMovementComponent() const
+{
+	UPawnMovementComponent* PawnMovementComponent = GetMovementComponent();
+	if (!PawnMovementComponent) { return nullptr; }
 
+	UCharacterMovementComponent* CharacterMovementComponent = Cast<UCustomMovementComponent>(PawnMovementComponent);
+	if (!CharacterMovementComponent) { return nullptr; }
 
+	return CharacterMovementComponent;
+}
 
+void APlayerCharacter::InterruptCharacterInteraction() const
+{
+	if (IsCharacterInteracts)
+	{
+		if (OnInteractionInterrupted.IsBound())
+		{
+			OnInteractionInterrupted.Broadcast();
+		}
+	}
+}
 
+float APlayerCharacter::GetHealth()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetHealth();
+	}
 
+	return 0.0f;
+}
+
+float APlayerCharacter::GetMaxHealth()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetMaxHealth();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetMana()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetMana();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetMaxMana()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetMaxMana();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetStamina()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetStamina();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetMaxStamina()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetMaxStamina();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetWalkingSpeed()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetWalkingSpeed();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetRunningSpeed()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetRunningSpeed();
+	}
+
+	return 0.0f;
+}
 

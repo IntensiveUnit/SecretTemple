@@ -4,66 +4,24 @@
 #include "Abilities/CustomAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "Character/PlayerCharacter.h"
-#include "GameFramework/PlayerController.h"
-
 
 void UCustomAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	FGameplayEffectContextHandle Context = Data.EffectSpec.GetContext();
-	UAbilitySystemComponent* Source = Context.GetOriginalInstigatorAbilitySystemComponent();
-	const FGameplayTagContainer& SourceTags = *Data.EffectSpec.CapturedSourceTags.GetAggregatedTags();
-	FGameplayTagContainer SpecAssetTags;
-	Data.EffectSpec.GetAllAssetTags(SpecAssetTags);
+	const FGameplayEffectContextHandle Context = Data.EffectSpec.GetContext();
 
-	// Get the Target actor, which should be our owner
-	AActor* TargetActor = nullptr;
-	AController* TargetController = nullptr;
+	LogChangedAttribute(Data);
+	// Get the target character, which should be our owner
 	APlayerCharacter* TargetCharacter = nullptr;
 	
-
 	if (Data.Target.AbilityActorInfo.IsValid() && Data.Target.AbilityActorInfo->AvatarActor.IsValid())
 	{
-		TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
-		TargetController = Data.Target.AbilityActorInfo->PlayerController.Get();
+		AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();;
 		TargetCharacter = Cast<APlayerCharacter>(TargetActor);
 	}
 
-	// Get the Source actor
-	AActor* SourceActor = nullptr;
-	AController* SourceController = nullptr;
-	APlayerCharacter* SourceCharacter = nullptr;
-
-	if (Source && Source->AbilityActorInfo.IsValid() && Source->AbilityActorInfo->AvatarActor.IsValid())
-	{
-		SourceActor = Source->AbilityActorInfo->AvatarActor.Get();
-		SourceController = Source->AbilityActorInfo->PlayerController.Get();
-		if (SourceController == nullptr && SourceActor != nullptr)
-		{
-			if (APawn* Pawn = Cast<APawn>(SourceActor))
-			{
-				SourceController = Pawn->GetController();
-			}
-		}
-
-		// Use the controller to find the source pawn
-		if (SourceController)
-		{
-			SourceCharacter = Cast<APlayerCharacter>(SourceController->GetPawn());
-		}
-		else
-		{
-			SourceCharacter = Cast<APlayerCharacter>(SourceActor);
-		}
-
-		// Set the causer actor based on context if it's set
-		if (Context.GetEffectCauser())
-		{
-			SourceActor = Context.GetEffectCauser();
-		}
-	}
-
+	//If it was damage, we process it separately
 	if (Data.EvaluatedData.Attribute == GetDamageAttribute())
 	{
 		// Store a local copy of the amount of damage done and clear the damage attribute
@@ -89,7 +47,6 @@ void UCustomAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 			// Apply the health change and then clamp it
 			const float NewHealth = GetHealth() - LocalDamageDone;
 			SetHealth(FMath::Clamp(NewHealth, 0.0f, GetMaxHealth()));
-
 		}
 	}
 
@@ -101,15 +58,22 @@ void UCustomAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
+	    
 		//Handle Health changes
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 	}
 	
 	if (Data.EvaluatedData.Attribute == GetStaminaAttribute())
 	{
-		//Handle stamina changes
+		//Handle Stamina changes
 		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
 	}
 	
+}
+
+void UCustomAttributeSet::LogChangedAttribute(const FGameplayEffectModCallbackData& Data)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Attribute %s was chaged to %f"),
+		*Data.EvaluatedData.Attribute.GetName(), Data.EvaluatedData.Magnitude);
 }
 

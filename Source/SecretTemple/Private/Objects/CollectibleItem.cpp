@@ -1,40 +1,53 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Objects/CollectibleItem.h"
-
 #include "Character/PlayerCharacter.h"
+#include "Components/InventoryComponent.h"
 
 
-bool ACollectibleItem::UseItem(APlayerCharacter* InteractionInstigator)
+void ACollectibleItem::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-	return Super::UseItem(InteractionInstigator);
+	const FCollectibleItemData* CacheCollectibleItemData = LoadData<FCollectibleItemData>();
+	
+	if (!CacheCollectibleItemData)
+	{
+		UE_LOG(LogItems, Error, TEXT("Failed to load data from DataTable in %s"), *this->GetName());
+		return;
+	}
+	
+	SetCollectibleItemData(CacheCollectibleItemData);
 }
 
-void ACollectibleItem::SetWasResolved(bool InWasResolved)
+void ACollectibleItem::SetCollectibleItemData(const FCollectibleItemData& InCollectibleItemData)
 {
-	bWasResolved = InWasResolved;
+	CollectibleItemData = InCollectibleItemData;
+
+	if (!CollectibleItemData.StaticMesh)
+	{
+		UE_LOG(LogItems, Warning, TEXT("No static mesh in item %s"), *CollectibleItemData.Name.ToString());
+		return;
+	}
+	
+	StaticMeshComponent->SetStaticMesh(CollectibleItemData.StaticMesh);
 }
 
-bool ACollectibleItem::GetWasResolved()
+FCollectibleItemData& ACollectibleItem::GetCollectibleItemData()
 {
-	return bWasResolved;
+	return CollectibleItemData;
 }
 
-bool ACollectibleItem::CanInteractWithActor_Implementation(APlayerCharacter* InteractionInstigator)
+TEnumAsByte<EItemType> ACollectibleItem::GetItemType()
 {
-	return true;
+	return EItemType::Collectible;
 }
 
 bool ACollectibleItem::InteractWithActor_Implementation(APlayerCharacter* InteractionInstigator)
 {
-	bool const bWasAdded = InteractionInstigator->GetInventory()->AddCollectibleItem(this);
+	bool const bWasAdded = InteractionInstigator->GetInventoryComponent()->AddCollectibleItem(this);
 
 	if (bWasAdded)
 	{
-		//TODO rewrite
-		SetActorLocation(FVector(0, 0 , -9000.f));
-		OnCollectibleItemPickuped.Broadcast(this);
+		OnItemWasPickedUp.Broadcast(this, InteractionInstigator);
 	}
 	
 	return bWasAdded;

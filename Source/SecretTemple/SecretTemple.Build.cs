@@ -8,7 +8,7 @@ public class SecretTemple : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "UnrealEd" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "UnrealEd", "GameplayAbilities" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"Slate",

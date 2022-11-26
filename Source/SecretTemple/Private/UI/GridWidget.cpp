@@ -9,11 +9,8 @@
 
 void UGridWidget::SetInventoryData(UInventoryComponent* InInventory)
 {
-	OnPrePopulateData();
-	
 	Inventory = InInventory;
 	NativeOnInventoryDataReceived();
-	
 }
 
 void UGridWidget::OnInventoryUpdated()
@@ -25,16 +22,28 @@ void UGridWidget::OnInventoryUpdated()
 		OnItemWidgetRemoved(SlotWidget);
 	}
 	
-	//TODO instead of full deleting and adding write function which add item widgets at needed locations(in this case we might use animations and etc)
 	ItemWidgets.Empty();
-	
-	for (const FInventoryItemInfo& Item: Inventory->GetItems())
+	for (const FInventoryItemSlot& Item: Inventory->GetInventoryItems())
 	{
 		UItemWidget* ItemWidget = CreateWidget<UItemWidget>(GetOwningPlayer(), ItemWidgetClass);
-		check(ItemWidget != nullptr);
-		ItemWidget->SetItemData(Item, this);
+		
+		ItemWidget->SetItemData(Item, CellSize, this);
+		
 		ItemWidgets.Add(ItemWidget);
+		
 		OnItemWidgetCreated(ItemWidget);
+	}
+
+	CellWidgets.Empty();
+	for (const FItemCoordinate& Coordinate: GetAllCells())
+	{
+		UCellWidget* CellWidget = CreateWidget<UCellWidget>(GetOwningPlayer(), CellWidgetClass);
+		
+		CellWidget->SetCellData(Coordinate, CellSize, this);
+		
+		CellWidgets.Add(CellWidget);
+		
+		OnCellWidgetCreated(CellWidget);
 	}
 	
 }
@@ -48,19 +57,21 @@ void UGridWidget::NativeOnInventoryDataReceived()
 		Inventory->OnInventoryUpdated.AddDynamic(this, &ThisClass::OnInventoryUpdated);
 	}
 	
-	CellWidgets.Empty();
-	for (const FItemCoordinate Coordinate: Inventory->GetAllCells())
-	{
-		UCellWidget* CellWidget = CreateWidget<UCellWidget>(GetOwningPlayer(), CellWidgetClass);
-		check(CellWidget != nullptr);
+	OnInventoryUpdated();
+}
 
-		CellWidget->SetCellData(Coordinate, Inventory->CellSize, this);
-		
-		CellWidgets.Add(CellWidget);
-		OnCellWidgetCreated(CellWidget);
+TArray<FItemCoordinate> UGridWidget::GetAllCells() const
+{
+	TArray<FItemCoordinate> AllCells;
+
+	for (int I = 0; I < Inventory->GetInventorySize().X; ++I)
+	{
+		for (int J = 0; J < Inventory->GetInventorySize().Y; ++J)
+		{
+			AllCells.Add(FItemCoordinate(I, J));
+		}
 	}
 
-	OnInventoryUpdated();
-	
+	return AllCells;
 }
 

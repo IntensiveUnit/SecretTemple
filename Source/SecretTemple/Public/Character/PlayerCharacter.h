@@ -1,16 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/CustomAttributeSet.h"
-#include "Abilities/CustomGameplayAbility.h"
-#include "Abilities/GameplayAbility.h"
-#include "Camera/CameraComponent.h"
-#include "Components/SphereComponent.h"
-#include "Components/InventoryComponent.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "PlayerCharacter.generated.h"
+
+class UGameplayEffect;
+class UCustomGameplayAbility;
+class UCameraComponent;
+class UInventoryComponent;
+class UCustomAttributeSet;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionInterrupted);
 
@@ -19,71 +19,126 @@ class SECRETTEMPLE_API APlayerCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	// Sets default values for this character's properties
 	APlayerCharacter(const FObjectInitializer& ObjectInitializer);
-
-protected:
-
-	//TODO clarify WeakPointer
-	// Instead of TWeakObjectPtrs, you could just have UPROPERTY() hard references or no references at all and just call
-	// GetAbilitySystem() and make a GetAttributeSetBase() that can read from the PlayerState or from child classes.
-	// Just make sure you test if the pointer is valid before using.
-	// I opted for TWeakObjectPtrs because I didn't want a shared hard reference here and I didn't want an extra function call of getting
-	// the ASC/AttributeSet from the PlayerState or child classes every time I referenced them in this base class.
-	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-	TWeakObjectPtr<UAttributeSet> AttributeSet;
-
-	bool CharacterAbilitiesGiven = false;
-	bool StartupEffectsApplied = false;
- 
-	// Default abilities for this Character. These will be removed on Character death and regiven if Character respawns.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASDocumentation|Abilities")
-	TArray<TSubclassOf<UCustomGameplayAbility>> CharacterAbilities;
-
-	// These effects are only applied one time on startup
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASDocumentation|Abilities")
-	TArray<TSubclassOf<class UGameplayEffect>> StartupEffects;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 	virtual void PostInitializeComponents() override;
 	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
-	float BaseTurnRate = 45.0f;
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
-	float BaseLookUpRate = 45.0f;
+	virtual void PossessedBy(AController* NewController) override;
+
+public:
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Camera")
-	float StartingCameraBoomArmLength;
+	//------------------------------------------------------------------//
+	//----------------------Ability system effects and abilities--------//
+	//------------------------------------------------------------------//
 
-	UPROPERTY(BlueprintReadOnly, Category = "Camera")
-	FVector StartingCameraBoomLocation;
+	// Bind abilities to input via their EAbilityInputID
+	void BindASCInput();
+
+	// Add startup effect (Stamina regeneration, etc.)
+	void AddStartupEffects();
 	
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Camera")
-	UCameraComponent* FollowCamera;
+	// Add abilities 
+	void AddCharacterAbilities();
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bIsRunning;
+	//Is character health more than 0
+	bool IsAlive();
+
+
 	
-	bool IsCharacterInteracts;
+	//------------------------------------------------------------------//
+	//----------------------Interaction---------------------------------//
+	//------------------------------------------------------------------//
 
-	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
-	float InteractionRadius;
+	/**
+	* Who is the character interacting with
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Interaction")
+	AActor* GetInteractionActor();
 
-	UPROPERTY()
-	AActor* InteractionActor;
+	/**
+	* Is in interaction with someone in the world
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Interaction")
+	bool GetIsCharacterInteracts();
+
+	/**
+	* Assigns an actor with which the character interacts,
+	* for example, to move the camera, take control, etc.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	bool SetIsCharacterInteracts(AActor* ActorToInteract);
+
+	/**
+	* Interrupt the interaction of the actor
+	* and call the appropriate delegate
+	*/
+	void InterruptCharacterInteraction() const;
+
+	//------------------------------------------------------------------//
+	//----------------------Movement------------------------------------//
+	//------------------------------------------------------------------//
+
+	//TODO description
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetHealth();
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetMaxHealth();
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetMana();
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetMaxMana();
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetStamina();
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetMaxStamina();
 	
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	USphereComponent* InteractionSphere;
+	// Gets the Current value of MoveSpeed
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetWalkingSpeed();
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	UInventoryComponent* InventoryComponent;
+	// Gets the Base value of MoveSpeed
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetRunningSpeed();
+	
+	//------------------------------------------------------------------//
+	//----------------------Inventory-----------------------------------//
+	//------------------------------------------------------------------//
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	USkeletalMeshComponent* ToolComponent;
+	/**
+	* Get the coordinates of the place in front of the character
+	* where it is worth spawning the dropped item
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	FVector GetItemDropPosition();
+
+	/**
+	* Inventory component, stores consumable items,
+	* puzzle items, and notes
+	*/
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	UInventoryComponent* GetInventoryComponent();
+	
+
+	
+	//------------------------------------------------------------------//
+	//----------------------Input---------------------------------------//
+	//------------------------------------------------------------------//
 	
 	// Mouse + Gamepad
 	void LookUp(float Value);
@@ -97,58 +152,113 @@ protected:
 
 	// KeyBoard + Gamepad
 	void MoveRight(float Value);
-
-	//TODO add gamepad
+	
 	//Keyboard
 	void ToggleCrouch();
 	
-	//TODO add gamepad
 	//Keyboard
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void Interact();
+
+
 	
-	// Called from both SetupPlayerInputComponent and OnRep_PlayerState because of a potential race condition where the PlayerController might
-	// call ClientRestart which calls SetupPlayerInputComponent before the PlayerState is repped to the client so the PlayerState would be null in SetupPlayerInputComponent.
-	// Conversely, the PlayerState might be repped before the PlayerController calls ClientRestart so the Actor's InputComponent would be null in OnRep_PlayerState.
-	void BindASCInput();
+	//------------------------------------------------------------------//
+	//----------------------Properties----------------------------------//
+	//------------------------------------------------------------------//
+	public:
+	/**
+	* Character camera component
+	*/
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Camera")
+	UCameraComponent* FollowCamera;
 	
-	//Todo clarify
-	bool ASCInputBound = false;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	/**
+	* Gameplay ability system component
+	*/
+	UPROPERTY()
+	UAbilitySystemComponent* AbilitySystemComponent;
 	
-	void AddStartupEffects();
+	/**
+	* Gameplay ability attribute set
+	*/
+	UPROPERTY()
+	UCustomAttributeSet* AttributeSet;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
+	UAbilitySystemComponent* GetAbilitySystemComponent();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
+	UCustomAttributeSet* GetAttributeSet();
+
 	
-	// Grant abilities on the Server. The Ability Specs will be replicated to the owning client.
-	void AddCharacterAbilities();
+	/**
+	* Default abilities for this Character
+	*/
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Abilities")
+	TArray<TSubclassOf<UCustomGameplayAbility>> CharacterAbilities;
 
-	bool IsAlive();
+	/**
+	* These effects are only applied one time on startup
+	*/
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Abilities")
+	TArray<TSubclassOf<UGameplayEffect>> StartupEffects;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure)
-	AActor* GetInteractionActor();
+	/**
+	* Turn left right speed
+	*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
+	float BaseTurnRate = 45.0f;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure)
-	UInventoryComponent* GetInventory();
+	/**
+	* Turn up down speed
+	*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
+	float BaseLookUpRate = 45.0f;
+	
+	/**
+	* Radius in which the character can interact with objects
+	*/
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	float InteractionRadius;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure)
-	USkeletalMeshComponent* GetToolComponent();
+private:
+	/**
+	* Inventory component, stores consumable items, puzzle items, and notes
+	*/
+	UPROPERTY()
+	UInventoryComponent* InventoryComponent;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure)
-	bool GetIsCharacterInteracts();
+	/**
+	* The actor with which the character interacts
+	*/
+	UPROPERTY()
+	AActor* InteractionActor;
 
-	//This function is needed for actors that have a camera,
-	//so that it doesn’t happen that the character clicked interaction,
-	//the camera moved, control was taken away, but before that he had time to move the cursor and GetInteractionActor was overwritten
-	UFUNCTION(BlueprintCallable)
-	bool SetIsCharacterInteracts(AActor* ActorToInteract);
+	/**
+	* Means that the character is in interaction with some kind of entity, for example, in the object's inspection menu
+	*/
+	UPROPERTY()
+	bool IsCharacterInteracts;
 
-	//Delegates
+	
+	
+	//------------------------------------------------------------------//
+	//----------------------Helpers-------------------------------------//
+	//------------------------------------------------------------------//
+
+	//Get PawnMovementComponent and cast them to CharacterMovementComponent
+	UCharacterMovementComponent* GetCharacterMovementComponent() const;
+
+
+	
+	//------------------------------------------------------------------//
+	//----------------------Delegates-----------------------------------//
+	//------------------------------------------------------------------//
+
+	/**
+	* If it is urgent to interrupt the interaction of the character with something,
+	* for example, while the player was solving a puzzle and a monster attacked him, causing a QTE event
+	*/
 	UPROPERTY(BlueprintAssignable)	
 	FInteractionInterrupted OnInteractionInterrupted;
 };
-

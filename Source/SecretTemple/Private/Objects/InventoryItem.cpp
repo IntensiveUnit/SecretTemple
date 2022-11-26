@@ -3,43 +3,70 @@
 
 #include "Objects/InventoryItem.h"
 
+#include "AbilitySystemComponent.h"
 #include "Character/PlayerCharacter.h"
 #include "Components/InventoryComponent.h"
-#include "PlayerState/CustomPlayerState.h"
 
-bool AInventoryItem::CanInteractWithActor_Implementation(APlayerCharacter* InteractionInstigator)
+DEFINE_LOG_CATEGORY(LogInventory)
+
+void AInventoryItem::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-	return true;
+	const FInventoryItemData* CacheInventoryItemData = LoadData<FInventoryItemData>();
+	
+	//If the data is empty after LoadData, then is error
+	if (!CacheInventoryItemData)
+	{
+		UE_LOG(LogItems, Error, TEXT("Failed to load data from DataTable in %s"), *this->GetName());
+		return;
+	}
+	
+	SetInventoryItemData(CacheInventoryItemData);
+}
+
+void AInventoryItem::SetInventoryItemData(const FInventoryItemData& InInventoryItemData)
+{
+	InventoryItemData = InInventoryItemData;
+
+	if (!InventoryItemData.StaticMesh)
+	{
+		UE_LOG(LogItems, Warning, TEXT("No static mesh in item %s"), *InventoryItemData.Name.ToString());
+		return;
+	}
+	
+	StaticMeshComponent->SetStaticMesh(InventoryItemData.StaticMesh);
+}
+
+FInventoryItemData& AInventoryItem::GetInventoryItemData()
+{
+	return InventoryItemData;
+}
+
+TEnumAsByte<EItemType> AInventoryItem::GetItemType()
+{
+	return EItemType::Inventory;
 }
 
 bool AInventoryItem::InteractWithActor_Implementation(APlayerCharacter* InteractionInstigator)
 {
-	bool const bWasAdded = InteractionInstigator->GetInventory()->AddItem(FInventoryItemInfo(this, FItemCoordinate(0,0)));
-
-	if (bWasAdded)
-	{
-		HideItem();
-	}
+	bool const bWasAdded = InteractionInstigator->GetInventoryComponent()->AddInventoryItem(this);
 	
 	return bWasAdded;
 }
 
 bool AInventoryItem::UseItem(APlayerCharacter* InteractionInstigator)
 {
-	if (!ItemInfo.ItemEffect) { return false; }
+	if (!InventoryItemData.ItemEffect) { return false; }
 
 	if (!InteractionInstigator){ return false; }
 	
 	if (!InteractionInstigator->GetPlayerState()) { return false;}
 	
-	const ACustomPlayerState* PlayerState = InteractionInstigator->GetPlayerState<ACustomPlayerState>();
-	if (!PlayerState) { return false; }
-
-	UAbilitySystemComponent* GameplayAbilitySystemComponent = PlayerState->GetAbilitySystemComponent();
+	UAbilitySystemComponent* GameplayAbilitySystemComponent = InteractionInstigator->GetAbilitySystemComponent();
 	if (!GameplayAbilitySystemComponent) { return false; }
 	
-	GameplayAbilitySystemComponent->ApplyGameplayEffectToSelf(ItemInfo.ItemEffect.GetDefaultObject(), 1, GameplayAbilitySystemComponent->MakeEffectContext());
+	GameplayAbilitySystemComponent->ApplyGameplayEffectToSelf(InventoryItemData.ItemEffect.GetDefaultObject(), 1, GameplayAbilitySystemComponent->MakeEffectContext());
 
+	//TODO what about amount in items?
 	Destroy();
 	
 	return true;

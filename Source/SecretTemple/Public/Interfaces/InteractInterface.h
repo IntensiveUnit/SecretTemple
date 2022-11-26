@@ -32,8 +32,5 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
 	bool UseItemOnActor(class APlayerCharacter* InteractionInstigator, class AItem* Item);
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Interaction")
-	bool TakeResponseFromActor(class AActor* ResponseInstigator, bool bResponse);
 	
 };
