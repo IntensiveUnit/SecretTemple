@@ -20,7 +20,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Movement")
 	bool bIsRunning;
 	
-	// Sprint
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void StartSprinting();
 	

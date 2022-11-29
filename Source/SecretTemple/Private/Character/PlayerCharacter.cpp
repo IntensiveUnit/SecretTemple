@@ -79,16 +79,6 @@ void APlayerCharacter::Tick(float DeltaTime)
 	InteractionActor = HitResult.GetActor();
 }
 
-void APlayerCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-	
-	//Used for stairs, when a character approaches them, the fly mode is activated.
-	//GetCharacterMovementComponent()->MaxFlySpeed = GetCharacterMovementComponent()->MaxWalkSpeedCrouched;
-	
-	//GetCharacterMovementComponent()->BrakingDecelerationFlying = GetCharacterMovementComponent()->MaxAcceleration;
-}
-
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -97,8 +87,6 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("Move Right / Left", this, &APlayerCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &APlayerCharacter::LookUp);
 	PlayerInputComponent->BindAxis("Turn Right / Left", this, &APlayerCharacter::Turn);
-	PlayerInputComponent->BindAction("Crouch", EInputEvent::IE_Pressed, this, &APlayerCharacter::ToggleCrouch);
-	PlayerInputComponent->BindAction("Crouch", EInputEvent::IE_Released, this, &APlayerCharacter::ToggleCrouch);
 	PlayerInputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &APlayerCharacter::Interact);
 	
 	// Bind player input to the AbilitySystemComponent
@@ -133,28 +121,15 @@ void APlayerCharacter::Turn(float Value)
 
 void APlayerCharacter::MoveForward_Implementation(float Value)
 {
+	MoveForwardInputScalar = Value;
+	
 	if (Value == 0){ return; }
 	
 	InterruptCharacterInteraction();
-
-	if (!GetCharacterMovementComponent())
-	{ 
-		return;
-	}
 	
-	//TODO Instead of all this made ladder via GameplayAbility
-	if (GetCharacterMovementComponent()->MovementMode == EMovementMode::MOVE_Flying)
-	{
-		//No explanation of magic literals because a piece of code will be removed
-		FVector MovementVector = FVector::DotProduct(FollowCamera->GetForwardVector(), GetActorUpVector()) > -0.5f ? GetActorUpVector() : GetActorUpVector() * -1 + FollowCamera->GetForwardVector();
-		MovementVector.Normalize();
-		AddMovementInput(MovementVector, Value);
-	}
-	else
-	{
-		const FVector MovementVector = UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0));
-		AddMovementInput(MovementVector, Value);
-	}
+	const FVector MovementVector = UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0));
+	
+	AddMovementInput(MovementVector, Value);
 }
 
 void APlayerCharacter::MoveRight(float Value)
@@ -163,32 +138,11 @@ void APlayerCharacter::MoveRight(float Value)
 	
 	InterruptCharacterInteraction();
 	
-	AddMovementInput(UKismetMathLibrary::GetRightVector(FRotator(0, GetControlRotation().Yaw, 0)), Value);
+	const FVector MovementVector = UKismetMathLibrary::GetRightVector(FRotator(0, GetControlRotation().Yaw, 0));
+	
+	AddMovementInput(MovementVector, Value);
 }
 
-void APlayerCharacter::ToggleCrouch()
-{
-	InterruptCharacterInteraction();
-	
-	if (!GetCharacterMovementComponent())
-	{ 
-		return;
-	}
-	
-	if (GetCharacterMovementComponent()->MovementMode == EMovementMode::MOVE_Flying)
-	{
-		return;
-	}
-	
-	if (this->bIsCrouched)
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Crouch();
-	}
-}
 
 void APlayerCharacter::Interact_Implementation()
 {
@@ -288,6 +242,11 @@ UCustomAttributeSet* APlayerCharacter::GetAttributeSet()
 	}
 }
 
+float APlayerCharacter::GetMoveForwardInputScalar()
+{
+	return MoveForwardInputScalar;
+}
+
 bool APlayerCharacter::IsAlive()
 {
 	return GetAttributeSet()->GetHealth() > 0.f;
@@ -332,17 +291,6 @@ bool APlayerCharacter::SetIsCharacterInteracts(AActor* ActorToInteract)
 	IsCharacterInteracts = true;
 	InteractionActor = ActorToInteract;
 	return true;
-}
-
-UCharacterMovementComponent* APlayerCharacter::GetCharacterMovementComponent() const
-{
-	UPawnMovementComponent* PawnMovementComponent = GetMovementComponent();
-	if (!PawnMovementComponent) { return nullptr; }
-
-	UCharacterMovementComponent* CharacterMovementComponent = Cast<UCustomMovementComponent>(PawnMovementComponent);
-	if (!CharacterMovementComponent) { return nullptr; }
-
-	return CharacterMovementComponent;
 }
 
 void APlayerCharacter::InterruptCharacterInteraction() const
@@ -431,6 +379,16 @@ float APlayerCharacter::GetRunningSpeed()
 	if (GetAttributeSet())
 	{
 		return GetAttributeSet()->GetRunningSpeed();
+	}
+
+	return 0.0f;
+}
+
+float APlayerCharacter::GetCrouchingSpeed()
+{
+	if (GetAttributeSet())
+	{
+		return GetAttributeSet()->GetCrouchingSpeed();
 	}
 
 	return 0.0f;

@@ -13,23 +13,20 @@ float UCustomMovementComponent::GetMaxSpeed() const
 	APlayerCharacter* Owner = Cast<APlayerCharacter>(GetOwner());
 	if (!Owner)
 	{
-		//UE_LOG(LogMovementComponent, Error, TEXT("No Owner"));
 		return Super::GetMaxSpeed();
 	}
 	
 	if (IsCrouching())
 	{
-		//UE_LOG(LogMovementComponent, Log, TEXT("Is crouching, speed is: %f"), MaxWalkSpeedCrouched);
-		return MaxWalkSpeedCrouched;
+		UE_LOG(LogMovementComponent, Log, TEXT("Is crouching, speed is: %f"), Owner->GetCrouchingSpeed());
+		return Owner->GetCrouchingSpeed();
 	}
 	
 	if (bIsRunning)
 	{
-		//UE_LOG(LogMovementComponent, Log, TEXT("Is running, speed is: %f"), Owner->GetRunningSpeed());
 		return Owner->GetRunningSpeed();
 	}
 	
-	//UE_LOG(LogMovementComponent, Log, TEXT("Is walking, speed is: %f"), Owner->GetWalkingSpeed());
 	return Owner->GetWalkingSpeed();
 }
 

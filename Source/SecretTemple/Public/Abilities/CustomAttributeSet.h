@@ -36,63 +36,63 @@ public:
 	/**
 	* Used for special abilities
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Mana")
 	FGameplayAttributeData Mana;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, Mana)
 
 	/**
 	* Used for special abilities
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Mana")
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, MaxMana)
 
 	/**
 	* Used by entities that contain an gameplay effect that restores mana (consumable items, etc.)
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Mana")
 	FGameplayAttributeData ManaRegen;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, ManaRegen)
 
 	/**
 	* The value of hit points, when reaching zero the character dies
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Health")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, Health)
 
 	/**
 	* Maximum hit points a character can have
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Health")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, MaxHealth)
 
 	/**
 	* Used by entities that contain an gameplay effect that restores health (consumable items, etc.)
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Health")
 	FGameplayAttributeData HealthRegen;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, HealthRegen)
 
 	/**
 	* A value that determines whether the character can run
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Stamina")
 	FGameplayAttributeData Stamina;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, Stamina)
 
 	/**
 	* A value that determines whether the character can run
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Stamina")
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, MaxStamina)
 	
 	/**
 	* How much stamina is regenerated per second, applied to the character as an effect
 	*/
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly, Category = "Stamina")
 	FGameplayAttributeData StaminaRegen;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, StaminaRegen)
 
@@ -109,6 +109,13 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FGameplayAttributeData RunningSpeed;
 	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, RunningSpeed)
+
+	/**
+	* Character's walking speed
+	*/
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	FGameplayAttributeData CrouchingSpeed;
+	ATTRIBUTE_ACCESSORS(UCustomAttributeSet, CrouchingSpeed)
 
 	/**
 	* Character's jump height when walking

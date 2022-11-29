@@ -28,8 +28,6 @@ protected:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	virtual void PostInitializeComponents() override;
 	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -115,6 +113,10 @@ public:
 	// Gets the Base value of MoveSpeed
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 	float GetRunningSpeed();
+
+	// Gets the Base value of MoveSpeed
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetCrouchingSpeed();
 	
 	//------------------------------------------------------------------//
 	//----------------------Inventory-----------------------------------//
@@ -154,9 +156,6 @@ public:
 	void MoveRight(float Value);
 	
 	//Keyboard
-	void ToggleCrouch();
-	
-	//Keyboard
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void Interact();
 
@@ -189,7 +188,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Abilities")
 	UCustomAttributeSet* GetAttributeSet();
-
 	
 	/**
 	* Default abilities for this Character
@@ -220,12 +218,19 @@ public:
 	*/
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	float InteractionRadius;
+	
+	UFUNCTION(BlueprintPure)
+	float GetMoveForwardInputScalar();
 
 private:
+
+	UPROPERTY(BlueprintGetter=GetMoveForwardInputScalar)
+	float MoveForwardInputScalar;
+	
 	/**
 	* Inventory component, stores consumable items, puzzle items, and notes
 	*/
-	UPROPERTY()
+	UPROPERTY(BlueprintGetter=GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
 	/**
@@ -239,16 +244,6 @@ private:
 	*/
 	UPROPERTY()
 	bool IsCharacterInteracts;
-
-	
-	
-	//------------------------------------------------------------------//
-	//----------------------Helpers-------------------------------------//
-	//------------------------------------------------------------------//
-
-	//Get PawnMovementComponent and cast them to CharacterMovementComponent
-	UCharacterMovementComponent* GetCharacterMovementComponent() const;
-
 
 	
 	//------------------------------------------------------------------//
